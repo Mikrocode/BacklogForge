@@ -1,25 +1,23 @@
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient | undefined };
+let prisma: PrismaClient | undefined = globalForPrisma.prisma;
 
-function ensureDatabaseUrl() {
-  if (!process.env.DATABASE_URL) {
-    process.env.DATABASE_URL = "postgresql://placeholder:placeholder@localhost:5432/placeholder";
-    if (process.env.NODE_ENV === "development") {
-      console.warn("DATABASE_URL was not set; using a placeholder to allow builds to proceed.");
+export function getPrismaClient() {
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required to initialize PrismaClient.");
+  }
+
+  if (!prisma) {
+    prisma = new PrismaClient({
+      log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+    });
+
+    if (process.env.NODE_ENV !== "production") {
+      globalForPrisma.prisma = prisma;
     }
   }
-}
 
-function createPrismaClient() {
-  ensureDatabaseUrl();
-  return new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-  });
-}
-
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  return prisma;
 }

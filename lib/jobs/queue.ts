@@ -1,8 +1,9 @@
-import { prisma } from "@/lib/prisma";
+import { getPrismaClient } from "@/lib/prisma";
 
 export type JobStatus = "pending" | "running" | "completed" | "failed";
 
 export async function enqueueSyncJob(params: { workspaceId: string; provider: string; projectId?: string; connectionId?: string }) {
+  const prisma = getPrismaClient();
   return prisma.syncJob.create({
     data: {
       workspaceId: params.workspaceId,
@@ -15,6 +16,7 @@ export async function enqueueSyncJob(params: { workspaceId: string; provider: st
 }
 
 export async function processPendingJobs() {
+  const prisma = getPrismaClient();
   const job = await prisma.syncJob.findFirst({ where: { status: "pending" }, orderBy: { startedAt: "asc" } });
   if (!job) return null;
 

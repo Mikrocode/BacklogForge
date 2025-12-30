@@ -3,9 +3,11 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
-import { prisma } from "./prisma";
+import { getPrismaClient } from "./prisma";
 
-const hasDatabase = Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim());
+const databaseUrl = process.env.DATABASE_URL?.trim();
+const hasDatabase = Boolean(databaseUrl);
+const prisma = hasDatabase ? getPrismaClient() : null;
 
 export const authConfig: NextAuthConfig = {
   adapter: hasDatabase ? PrismaAdapter(prisma) : undefined,
@@ -22,7 +24,7 @@ export const authConfig: NextAuthConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!hasDatabase) return null;
+        if (!hasDatabase || !prisma) return null;
         const email = credentials?.email;
         const password = credentials?.password;
         if (typeof email !== "string" || typeof password !== "string") return null;
