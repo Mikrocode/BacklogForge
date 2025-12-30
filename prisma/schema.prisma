@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  users     User[]
+  projects  Project[]
+  connections IntegrationConnection[]
+  tickets   Ticket[]
+  auditLogs AuditLog[]
+  syncJobs  SyncJob[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String?
+  role         String   @default("member")
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id])
+  accounts     Account[]
+  sessions     Session[]
+  auditLogs    AuditLog[]
+}
+
+model Account {
+  id                 String   @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model IntegrationConnection {
+  id                   String   @id @default(cuid())
+  workspaceId          String
+  provider             String
+  accessTokenEncrypted String?  @db.Text
+  refreshTokenEncrypted String? @db.Text
+  baseUrl              String
+  metadataJson         Json?
+  createdAt            DateTime @default(now())
+  workspace            Workspace @relation(fields: [workspaceId], references: [id])
+  projects             Project[]
+  syncJobs             SyncJob[]
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  workspaceId String
+  provider    String
+  externalId  String
+  name        String
+  keyOrPath   String
+  tickets     Ticket[]
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  connection  IntegrationConnection? @relation(fields: [connectionId], references: [id])
+  connectionId String?
+}
+
+model Ticket {
+  id               String   @id @default(cuid())
+  workspaceId      String
+  provider         String
+  externalId       String
+  projectId        String
+  title            String
+  description      String
+  status           String
+  labelsJson       Json?
+  assignee         String?
+  createdAtExternal DateTime
+  updatedAtExternal DateTime
+  lastSyncedAt     DateTime?
+  workspace        Workspace @relation(fields: [workspaceId], references: [id])
+  project          Project   @relation(fields: [projectId], references: [id])
+  refinementPacks  RefinementPack[]
+  scores           Score[]
+}
+
+model RefinementPack {
+  id                   String   @id @default(cuid())
+  ticketId             String
+  version              Int
+  improvedTitle        String
+  improvedDescription  String   @db.Text
+  userStory            String   @db.Text
+  acceptanceCriteriaJson Json
+  edgeCasesJson        Json
+  missingInfoJson      Json
+  nfrChecklistJson     Json
+  splitSuggestionsJson Json
+  dependenciesJson     Json
+  risksJson            Json
+  createdAt            DateTime @default(now())
+  ticket               Ticket   @relation(fields: [ticketId], references: [id])
+}
+
+model Score {
+  id            String   @id @default(cuid())
+  ticketId      String
+  model         String
+  businessValue Int
+  timeCriticality Int
+  riskReduction Int
+  jobSize       Int
+  confidence    Int
+  scoreValue    Float
+  rationaleText String   @db.Text
+  createdAt     DateTime @default(now())
+  ticket        Ticket   @relation(fields: [ticketId], references: [id])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  action      String
+  entityType  String
+  entityId    String
+  detailsJson Json
+  createdAt   DateTime @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+model SyncJob {
+  id          String   @id @default(cuid())
+  workspaceId String
+  provider    String
+  projectId   String?
+  status      String
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  logText     String?  @db.Text
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  connection  IntegrationConnection? @relation(fields: [connectionId], references: [id])
+  connectionId String?
+}
