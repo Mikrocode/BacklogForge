@@ -25,7 +25,8 @@ export interface Ticket {
   title: string;
   description: string;
   status: string;
-  labels: string[];
+  labels?: string[];
+  labelsJson?: string[];
   assignee?: string;
   createdAtExternal: string;
   updatedAtExternal: string;

@@ -8,6 +8,8 @@ export default function TicketDetail({ params }: { params: { id: string } }) {
   const ticket = mockTickets.find((item) => item.id === params.id);
   if (!ticket) return notFound();
 
+  const labels = ticket.labels ?? (Array.isArray(ticket.labelsJson) ? ticket.labelsJson : []);
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr,1fr]">
       <div className="space-y-4">
@@ -20,11 +22,15 @@ export default function TicketDetail({ params }: { params: { id: string } }) {
             <span className="rounded bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{ticket.status}</span>
           </div>
           <p className="mt-3 whitespace-pre-line text-sm text-slate-700">{ticket.description}</p>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
-            {ticket.labels.map((label) => (
-              <span key={label} className="rounded-full bg-slate-100 px-3 py-1">{label}</span>
-            ))}
-          </div>
+          {labels.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
+              {labels.map((label) => (
+                <span key={label} className="rounded-full bg-slate-100 px-3 py-1">{label}</span>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-4 text-xs text-slate-400">No labels</p>
+          )}
         </div>
         <div className="card space-y-3">
           <div className="flex gap-2">
