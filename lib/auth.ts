@@ -7,10 +7,10 @@ import { getPrismaClient } from "./prisma";
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
 const hasDatabase = Boolean(databaseUrl);
-const prisma = hasDatabase ? getPrismaClient() : null;
+const prisma = hasDatabase ? getPrismaClient() : undefined;
 
 export const authConfig: NextAuthConfig = {
-  adapter: hasDatabase ? PrismaAdapter(prisma) : undefined,
+  adapter: prisma ? PrismaAdapter(prisma) : undefined,
   session: { strategy: hasDatabase ? "database" : "jwt" },
   providers: [
     Google({
@@ -24,7 +24,7 @@ export const authConfig: NextAuthConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!hasDatabase || !prisma) return null;
+        if (!prisma) return null;
         const email = credentials?.email;
         const password = credentials?.password;
         if (typeof email !== "string" || typeof password !== "string") return null;
