@@ -5,9 +5,11 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 
+const hasDatabase = Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim());
+
 export const authConfig: NextAuthConfig = {
-  adapter: PrismaAdapter(prisma),
-  session: { strategy: "database" },
+  adapter: hasDatabase ? PrismaAdapter(prisma) : undefined,
+  session: { strategy: hasDatabase ? "database" : "jwt" },
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -20,6 +22,7 @@ export const authConfig: NextAuthConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        if (!hasDatabase) return null;
         const email = credentials?.email;
         const password = credentials?.password;
         if (typeof email !== "string" || typeof password !== "string") return null;
@@ -34,7 +37,7 @@ export const authConfig: NextAuthConfig = {
   ],
   callbacks: {
     async session({ session, user }) {
-      if (session.user) {
+      if (session.user && hasDatabase) {
         session.user.id = user.id;
         (session.user as any).role = (user as any).role;
       }
