@@ -25,7 +25,7 @@ export class FakeAIProvider implements RefinementProvider {
     return refinementPackSchema.parse(pack);
   }
 
-  async generateScoreRationale(ticket: Ticket) {
+  async generateScoreRationale(ticket: Ticket, _scoreInputs: { businessValue: number; timeCriticality: number; riskReduction: number; jobSize: number }) {
     return `WSJF derived from current fields for ${ticket.title}.`;
   }
 }
